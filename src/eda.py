@@ -1,6 +1,9 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import math
+from scipy.stats import chi2_contingency, fisher_exact
+from statsmodels.stats.proportion import proportions_ztest
 
 # ────────────────────────────────────────────────────────────────────────────
 def full_dtypes(df: pd.DataFrame) -> pd.DataFrame:
@@ -236,3 +239,109 @@ def plot_correlation_matrix(df, cols=None, title="Correlation Matrix"):
     plt.show()
 
 
+# ------------------------------------------------------------------
+def _cramers_v(table: pd.DataFrame) -> float:
+    """
+    Cramér’s V effect-size for an RxC contingency table.
+    """
+    chi2 = chi2_contingency(table, correction=False)[0]
+    n    = table.to_numpy().sum()
+    r, k = table.shape
+    return math.sqrt(chi2 / (n * (min(r, k) - 1))) if min(r, k) > 1 else 0.0
+
+
+def _effect_label(v: float) -> str:
+    """
+    Qualitative label for Cramér’s V.
+    """
+    if   v < 0.10: return "negligible"
+    elif v < 0.20: return "weak"
+    elif v < 0.30: return "moderate"
+    else:          return "strong"
+
+
+def categorical_target_analysis(
+    df: pd.DataFrame,
+    target: str = "Churn",
+    positive: str | int | bool = "Yes",
+    cat_cols: list[str] | None = None,
+    p_threshold: float = 0.05,
+    v_threshold: float = 0.10,
+) -> pd.DataFrame:
+    """
+    Evaluate association between each *categorical* feature and
+    a *binary* target using a χ² test (or Fisher for small 2×2 tables).
+
+    Returns a tidy DataFrame with:
+    ─ feature            : column name
+    ─ levels             : number of unique categories
+    ─ p_value            : significance level
+    ─ cramers_v          : effect-size (0–1)
+    ─ effect_label       : qualitative strength
+    ─ churn_rates        : {category: rate} dict rounded to 3 d.p.
+    ─ decision           : "keep" if (p < p_threshold and V ≥ v_threshold)
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Source dataframe.
+    target : str
+        Name of the binary target column.
+    positive : str | int | bool
+        Value considered as the positive class (defaults to "Yes").
+    cat_cols : list[str] | None
+        List of categorical columns to test.  If None, all object columns
+        are used.
+    p_threshold : float
+        Significance cut-off for the hypothesis test.
+    v_threshold : float
+        Minimum Cramér’s V to consider the effect relevant.
+
+    Returns
+    -------
+    pd.DataFrame
+        Sorted by p-value ascending (most significant first).
+    """
+    work = df.copy()
+    work[target] = (work[target] == positive).astype(int)
+
+    if cat_cols is None:
+        cat_cols = work.select_dtypes(include="object").columns.tolist()
+
+    rows = []
+
+    for col in cat_cols:
+        if col == target:
+            continue
+
+        # contingency table: categories × target (0/1)
+        table = pd.crosstab(work[col], work[target])
+
+        # choose χ² or Fisher for 2×2 with small counts
+        if table.shape == (2, 2) and (table < 5).any().any():
+            _, p_val = fisher_exact(table)
+        else:
+            _, p_val, _, _ = chi2_contingency(table, correction=False)
+
+        v  = _cramers_v(table)
+        cr = (table[1] / table.sum(axis=1)).round(3).to_dict()
+
+        keep = (p_val < p_threshold) and (v >= v_threshold)
+
+        rows.append(
+            dict(
+                feature      = col,
+                levels       = table.shape[0],
+                p_value      = p_val,
+                cramers_v    = v,
+                effect_label = _effect_label(v),
+                churn_rates  = cr,
+                decision     = "keep" if keep else "drop",
+            )
+        )
+
+    return (
+        pd.DataFrame(rows)
+        .sort_values("p_value")
+        .reset_index(drop=True)
+    )

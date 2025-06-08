@@ -2,115 +2,172 @@
 
 ## EDA
 
-
-
-
 * Metrics
- MonthlyCharges = TotalCharges / tenure
--> To validate
+ MonthlyCharges = TotalCharges / tenure 
+ Avg Product Price = MonthlyCharges / services_count 
+ Total Procuts = services_count
+ MonthlyCharges = sum(Services)
+ -> To validate
 
-MonthlyCharges = Services
+
 
 Many users with low tenure 
 -> new users
 -> low monthlycharge -> Few products?
 
 
-Lower tenure -> Higher churn
+* Data Findings + Hypothesis
 
-Higher MonthlyCharges -> Higher churn
+    Lower tenure -> Higher churn
 
-Gender -> Similar Churn (male x female)
+    Higher MonthlyCharges -> Higher churn
 
-SeniorCitizen -> Higher Churn
+    Gender -> Similar Churn (male x female)
 
-No Partner -> Higher Churn
+    SeniorCitizen -> Higher Churn
 
-No Dependents -> Higher Churn
+    No Partner -> Higher Churn
 
-PhoneService -> Similar Churn
+    No Dependents -> Higher Churn
 
-MultipleLines -> Higher Churn
+    PhoneService -> Similar Churn
 
-InternetService:
-Fiber Optic -> Higher Churn
-DSL InternetService -> Moderate Churn
-No -> Lower churn
+    MultipleLines -> Higher Churn
 
-OnlineSecurity
-No -> Higher Churn
-Yes - Moderate Churn
-No internet service -> Lower Churn
+    InternetService:
+    Fiber Optic -> Higher Churn
+    DSL InternetService -> Moderate Churn
+    No -> Lower churn
 
-Online Backup
-No -> Higher Churn
-Yes -> Moderate Churn
-No internet service -> Lower Churn
+    OnlineSecurity
+    No -> Higher Churn
+    Yes - Moderate Churn
+    No internet service -> Lower Churn
 
-Device Protection
-No -> Higher Churn
-Yes -> Moderate Churn
-No internet service -> Lower Churn
+    Online Backup
+    No -> Higher Churn
+    Yes -> Moderate Churn
+    No internet service -> Lower Churn
 
-TechSupport
-No -> Higher Churn
-Yes -> Moderate Churn
-No internet service -> Lower Churn
+    Device Protection
+    No -> Higher Churn
+    Yes -> Moderate Churn
+    No internet service -> Lower Churn
 
-Streaming TV
-No -> Higher Churn
-Yes -> Higher Churn
-No internet service -> Lower Churn
+    TechSupport
+    No -> Higher Churn
+    Yes -> Moderate Churn
+    No internet service -> Lower Churn
 
-Streaming Movies
-No -> Higher Churn
-Yes -> Higher Churn
-No internet service -> Lower Churn
+    Streaming TV
+    No -> Higher Churn
+    Yes -> Higher Churn
+    No internet service -> Lower Churn
 
-Contract Type
-Month-to-month -> Higher Churn
-One year -> Lower churn (<15%)
-Two year -> Lower churn (<5%)
+    Streaming Movies
+    No -> Higher Churn
+    Yes -> Higher Churn
+    No internet service -> Lower Churn
 
-PaperlessBilling
-Yes -> Higher Churn
-No -> Lower Churn
+    Contract Type
+    Month-to-month -> Higher Churn
+    One year -> Lower churn (<15%)
+    Two year -> Lower churn (<5%)
 
-Payment Method
-Electronic check -> Higher Churn
-Mail -> Lower Churn
-Automatic Transfer -> Lower Churn
-Credit Card -> Lower Churn
+    PaperlessBilling
+    Yes -> Higher Churn
+    No -> Lower Churn
 
-Hypothesis Test to validate if the difference is stat sig
+    Payment Method
+    Electronic check -> Higher Churn
+    Mail -> Lower Churn
+    Automatic Transfer -> Lower Churn
+    Credit Card -> Lower Churn
 
-
-Avg Product Price = MonthlyCharges / services_count
-Total Procuts = services_count
+    Hypothesis Test to validate if the difference is stat sig
 
 
-Journey Decision
-1. 1st contact
-2. Offers
-3. Package selection
-Family / Partner influence
-4. Payment Method
-5. Payments
-Triggers
-Payments problem / service quality / pricing
-6. Churn decision
-Pricing
-Family / Partner influence
+* Correlation + Hypothesis test
+    Higher tenure -> lower churn
+    Higher MonthlyCharges -> higher churn
 
 
 
-Social Factor
 
 
 
-Key Findings
+* Journey Decision
+    1. 1st contact
+    2. Offers
+    3. Package selection
+    Family / Partner influence
+    4. Payment Method
+    5. Payments
+    Triggers
+    Payments problem / service quality / pricing
+    6. Churn decision
+    Pricing
+    Family / Partner influence
+
+* Groups
+ - Social
+    Dependents + Partner
+    SeniorCitizen
+
+ - Payment Friction
+    PaymentMethod
+    PaperlessBilling
+
+ - Contract
+    Contract
+
+ - Products
+    amount of products
+    Streaming Package
+    Online package - internet, security, tech support, backup, protection
 
 
-Feature Engineering
+ - Pricing
+    MonthlyCharges = TotalCharges / tenure 
+    Avg Product Price = MonthlyCharges / services_count 
+    Total Procuts = services_count
+    MonthlyCharges = sum(Services)
+
+
+
+* Feature Engineering
+    contract_months
+        shorter contract -> higher churn
+        (inverse)
+    Tenure
+        higher tenure -> lower churn
+        (inverse)
+    MonthlyCharge
+        higher monthly charge -> higher churn
+        (direct)
+    MonthlyContract
+        Monthly contract -> higher churn
+        (direct)
+    Streaming_pkg
+        Streaming package -> higher churn
+        (direct)
+    Online_pkg
+        Online package -> lower churn
+        (inverse)
+    Eletronic_check
+        Eletronic_check -> higher churn
+        (direct)
+    Automatic
+        Automatic -> lower churn
+        (inverse)
+    Paperless_billing
+        Paperless_billing -> higher churn
+        (direct)
+    MonthlyCharge <> Charge_tenure_ratio
+        Remove Charge_tenure_ratio
+        This metric was built to validate MonthlyCharge
+
+
+
 
 
