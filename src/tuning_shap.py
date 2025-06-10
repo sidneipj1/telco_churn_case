@@ -10,6 +10,47 @@ from sklearn.metrics import (roc_auc_score, f1_score, precision_score,
 from sklearn.ensemble import GradientBoostingClassifier
 warnings.filterwarnings("ignore")
 
+
+
+# ────────────────────────────────────────────────────────────────────────────
+def find_best_threshold(y_true, y_prob, objective="f1", recall_target=None, plot=False):
+    from sklearn.metrics import precision_recall_curve
+    import matplotlib.pyplot as plt
+    prec, rec, thr = precision_recall_curve(y_true, y_prob)
+    f1  = 2*prec*rec/(prec+rec+1e-8)
+
+    if objective == "f1":
+        idx = np.argmax(f1)
+    elif objective == "precision":
+        idx = np.argmax(prec)
+    elif objective == "recall":
+        if recall_target is None:
+            raise ValueError("recall_target must be set for objective='recall'")
+        cand = np.where(rec >= recall_target)[0]
+        idx  = cand[np.argmax(prec[cand])]
+    else:
+        raise ValueError("objective must be 'f1', 'precision', or 'recall'")
+
+    best_thr = thr[idx]
+    metrics  = dict(threshold=round(best_thr,3),
+                    precision=round(prec[idx],3),
+                    recall   =round(rec[idx],3),
+                    f1       =round(f1[idx],3))
+
+    # === ADD THIS BLOCK ===
+    if plot:
+        plt.plot(thr, prec[:-1], label="Precision")
+        plt.plot(thr, rec[:-1], label="Recall")
+        plt.plot(thr, f1[:-1], label="F1")
+        plt.axvline(best_thr, color="red", linestyle="--", label="Best threshold")
+        plt.xlabel("Threshold")
+        plt.legend()
+        plt.title("Precision/Recall/F1 vs Threshold")
+        plt.show()
+    # === END BLOCK ===
+
+    return best_thr, metrics
+
 # ────────────────────────────────────────────────────────────────────────────
 def tune_and_explain(
     df: pd.DataFrame,
@@ -67,7 +108,7 @@ def tune_and_explain(
     y_prob = best_pipe.predict_proba(X_te)[:, 1]
 
     # ─ choose threshold via PR curve
-    best_thr, pr_metrics = _choose_threshold(
+    best_thr, pr_metrics = find_best_threshold(
         y_true=y_te,
         y_prob=y_prob,
         objective=threshold_objective,
@@ -113,29 +154,5 @@ def tune_and_explain(
         joblib.dump({"model": best_pipe, "threshold": best_thr}, save_model_path)
         print(f"Model + threshold saved to {save_model_path}")
 
-    return metrics_df, best_pipe, best_thr
+    return metrics_df, best_pipe, best_thr, y_te, y_prob
 
-
-# ────────────────────────────────────────────────────────────────────────────
-def find_best_threshold(y_true, y_prob, objective="f1", recall_target=None):
-    prec, rec, thr = precision_recall_curve(y_true, y_prob)
-    f1  = 2*prec*rec/(prec+rec+1e-8)
-
-    if objective == "f1":
-        idx = np.argmax(f1)
-    elif objective == "precision":
-        idx = np.argmax(prec)
-    elif objective == "recall":
-        if recall_target is None:
-            raise ValueError("recall_target must be set for objective='recall'")
-        cand = np.where(rec >= recall_target)[0]
-        idx  = cand[np.argmax(prec[cand])]
-    else:
-        raise ValueError("objective must be 'f1', 'precision', or 'recall'")
-
-    best_thr = thr[idx]
-    metrics  = dict(threshold=round(best_thr,3),
-                    precision=round(prec[idx],3),
-                    recall   =round(rec[idx],3),
-                    f1       =round(f1[idx],3))
-    return best_thr, metrics

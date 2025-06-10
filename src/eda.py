@@ -92,6 +92,25 @@ def unique_summary(
     )
 
 
+# ────────────────────────────────────────────────────────────────────────────
+def clean_basic(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    # Convert TotalCharges; coerce errors -> NaN to fix blanks
+    df["TotalCharges"] = (
+        df["TotalCharges"]
+          .replace(r"^\s*$", np.nan, regex=True)
+          .astype("float64")
+    )
+    
+    df = df.dropna(subset=["TotalCharges"]).reset_index(drop=True)
+    
+    # SeniorCitizen is 0/1 -> categorical flag
+    df["SeniorCitizen"] = df["SeniorCitizen"].astype("int8")
+
+    # mark target as 1/0
+    df["Churn"] = df["Churn"].map({"Yes": 1, "No": 0}).astype("int8")
+    return df
+
 # ─────────────────────────────────────────────────────────────
 def plot_numeric_distribution(df: pd.DataFrame, num_cols: list, bins: int = 30):
     """
